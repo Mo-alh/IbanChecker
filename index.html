@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBAN Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 400px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            color: #6e8efb;
+            background: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background: #ddd;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(1);
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IBAN Checker</h1>
+        <form id="ibanForm">
+            <input 
+                type="text" 
+                placeholder="Enter your IBAN here..." 
+                name="iban" 
+                id="ibanInput" 
+                maxlength="34" 
+                required 
+            />
+            <br />
+            <button type="submit">Check!</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script>
+        const banks = {
+            '55': { 'bankName': 'Banque Saudi Fransi', 'nameEn': 'Banque Saudi Fransi', 'nameAr': 'البنك السعودي الفرنسي' },
+            '80': { 'bankName': 'Alrajhi Bank', 'nameEn': 'Alrajhi Bank', 'nameAr': 'بنك الراجحي' },
+            '10': { 'bankName': 'National Commercial Bank', 'nameEn': 'National Commercial Bank', 'nameAr': 'البنك الأهلي التجاري' },
+            '45': { 'bankName': 'Saudi British Bank', 'nameEn': 'SABB', 'nameAr': 'ساب' },
+            '20': { 'bankName': 'Riyadh Bank', 'nameEn': 'Riyad Bank', 'nameAr': 'بنك الرياض' },
+            '40': { 'bankName': 'Saudi American Bank', 'nameEn': 'SAMBA', 'nameAr': 'سامبا' },
+            '05': { 'bankName': 'Alinma Bank', 'nameEn': 'AL Inma Bank', 'nameAr': 'بنك الانماء' },
+            '50': { 'bankName': 'Alawwal Bank', 'nameEn': 'AlAwwal Bank', 'nameAr': 'البنك الأول' },
+            '60': { 'bankName': 'Bank AlJazira', 'nameEn': 'Bank Aljazerah', 'nameAr': 'بنك الجزيرة' },
+            '65': { 'bankName': 'Saudi Investment Bank', 'nameEn': 'Saudi Investment Bank', 'nameAr': 'البنك السعودي للأستثمار' },
+            '15': { 'bankName': 'Bank AlBilad', 'nameEn': 'BANK ALBELAD', 'nameAr': 'بنك البلاد' },
+            '30': { 'bankName': 'Arab National Bank', 'nameEn': 'Arab National Bank', 'nameAr': 'البنك العربي الوطني' },
+            '90': { 'bankName': 'GULF Bank', 'nameEn': 'Gulf International Bank', 'nameAr': 'بنك الخليج' },
+            '95': { 'bankName': 'Emirates Bank', 'nameEn': 'EMARITE BANK', 'nameAr': 'بنك الامارات' },
+            '76': { 'bankName': 'Bank Muscat', 'nameEn': 'Bank Muscat', 'nameAr': 'بنك مسقط' },
+            '71': { 'bankName': 'National Bank of Bahrain', 'nameEn': 'National Bank Of Bahrain', 'nameAr': 'بنك البحرين الوطني' },
+            '75': { 'bankName': 'National Bank of Kuwait', 'nameEn': 'National Bank of Kuwait', 'nameAr': 'بنك الكويت الوطني' },
+            '85': { 'bankName': 'BNP Paribas Bank', 'nameEn': 'BNP PARIBAS SAUDI ARABIA', 'nameAr': 'بي ان بي باريبوس' }
+        };
+
+        document.getElementById('ibanForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const ibanInput = document.getElementById('ibanInput').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            const sanitizedIban = ibanInput.replaceAll(' ', '');
+
+            if (!sanitizedIban.startsWith('SA') || sanitizedIban.length !== 24) {
+                resultDiv.textContent = 'Invalid IBAN. It must start with "SA" and be exactly 24 characters long.';
+                return;
+            }
+
+            const countryCode = sanitizedIban.slice(0, 2);
+            const checkNumber = sanitizedIban.slice(2, 4);
+            const bankCode = sanitizedIban.slice(4, 6);
+            const accountNumber = sanitizedIban.slice(6);
+
+            let bankNameEn = '';
+            let bankNameAr = '';
+            let bankFound = false;
+
+            if (banks[bankCode]) {
+                bankFound = true;
+                bankNameEn = banks[bankCode].nameEn || 'Unknown (English)';
+                bankNameAr = banks[bankCode].nameAr || 'غير معروف (عربي)';
+            }
+
+            if (bankFound) {
+                resultDiv.innerHTML = `
+                    <p>Bank Name: ${bankNameEn} (${bankNameAr})</p>
+                    <p>IBAN Details:</p>
+                    <ul>
+                        <li>Country Code: ${countryCode}</li>
+                        <li>Check Number: ${checkNumber}</li>
+                        <li>Bank Code: ${bankCode}</li>
+                        <li>Account Number: ${accountNumber}</li>
+                    </ul>
+                `;
+            } else {
+                resultDiv.textContent = 'Bank not found or invalid IBAN.';
+            }
+        });
+    </script>
+</body>
+</html>
